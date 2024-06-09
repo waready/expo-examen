@@ -11,7 +11,136 @@ Sin embargo, aunque MobileNet ofrece resultados prometedores, siempre existe mar
 
 El fine-tuning implica ajustar los pesos de las capas de un modelo pre-entrenado para adaptarlo a un conjunto de datos específico, mientras que la data augmentation consiste en generar nuevas muestras de entrenamiento a partir de las existentes mediante transformaciones como rotaciones, brillo o ambos.
 
-En esta presentación, compartiremos los resultados de nuestro estudio, destacando cómo la implementación de estas técnicas ha contribuido a mejorar la precisión del modelo MobileNet en la clasificación de imágenes. Además, analizaremos las matrices de confusión y los gráficos de entrenamiento para comprender mejor el impacto de estas técnicas en el rendimiento del modelo.
+
+## Data augmentation
+
+- No Augmentation (sin nada)
+
+  ```python
+     daug_args_null = dict()
+  ```
+
+- Flip HV (rotación)
+
+  ```python
+     daug_args_fliphv = dict(
+        horizontal_flip=True,
+        vertical_flip=True
+     )
+  ```
+
+- Brightness (brillo)
+
+  ```python
+  daug_args_brig = dict(
+       brightness_range=[0.5, 0.7]
+   )
+  ```
+
+- Flip + Brightness (rotación + brillo)
+
+  ```python
+  daug_args_flip_brig = dict(
+       horizontal_flip=True,
+       vertical_flip=True,
+       brightness_range=[0.5, 0.7]
+   )
+
+  ```
+
+## **Main**
+
+::: warning Epocas 
+   
+   ```python
+      fepochs = 10 
+  ```
+:::
+
+```python{21,25,34,35,38}
+if __name__ == '__main__':
+ # Define data augmentation techniques
+ daug_args_null = dict()
+
+ daug_args_fliphv = dict(
+     horizontal_flip=True,
+     vertical_flip=True
+ )
+
+ daug_args_brig = dict(
+     brightness_range=[0.5, 0.7]
+ )
+
+ daug_args_flip_brig = dict(
+     horizontal_flip=True,
+     vertical_flip=True,
+     brightness_range=[0.5, 0.7]
+ )
+
+ # Define the fine tuning layers
+ fine_tuning_layers = [2, 4, 6, 8, 10]
+ #fine_tuning_layers = [2,4]
+
+ # Collect all data augmentation strategies
+ data_augmentation_strategies = [
+     ("No Augmentation", daug_args_null),
+     ("Flip HV", daug_args_fliphv),
+     ("Brightness", daug_args_brig),
+    ("Flip + Brightness", daug_args_flip_brig)
+ ]
+
+ results_list = []
+
+ for ft_layers in fine_tuning_layers:
+     for strategy_name, daug_args in data_augmentation_strategies:
+         # Modelos con y sin aumento de datos
+         models = [
+             {"model":"MobileNet","ds":"dsmelanoma","classes":2,"ft":ft_layers,"daug":daug_args, "w":50,"h":50,"d":3}
+         ]
+
+         for m in models:
+             print("Model:", m["model"], "Fine Tuning Layers:", m["ft"], "Data Augmentation:", strategy_name)
+
+             # Read data and data augmentation
+             ilabelsclass, train_generator, validation_generator, test_generator = getdata(m["ds"], m["w"], m["h"], m["d"], m["daug"])
+
+             # Build model by transfer learning
+             model = build_model(m["model"], m["w"], m["h"], m["d"], m["classes"], m["ft"])
+
+             # Adjust fine-tuning layers
+             trainable_layers = m["ft"]
+             lastfinetuningfix(model, trainable_layers)
+
+             # Re-train model
+             model = train(m["model"], m["ds"], model, train_generator, validation_generator)
+
+             # Evaluation with test subset
+             print("Test")
+             results = model.evaluate(test_generator)
+             y_test_true = test_generator.classes
+             y_test_pred = np.argmax(model.predict(test_generator), axis=1)
+             acc = accuracy_score(y_test_true, y_test_pred)
+             print("Accuracy", acc)
+
+             # Report
+             print(classification_report(y_test_true, y_test_pred, target_names=test_generator.class_indices.keys()))
+
+             # Confusion matrix
+             cfm = confusion_matrix(y_test_true, y_test_pred)
+             vis_confusion_matrix(cfm, ilabelsclass)
+
+             # Append results to the list
+             results_list.append([m["model"], strategy_name, m["ft"], acc])
+
+             print()
+             del model
+             # Release memory
+             ker.clear_session()
+
+ # Create a DataFrame with the results
+ df_results = pd.DataFrame(results_list, columns=["Model", "Data Augmentation", "Fine Tuning Layers", "Accuracy"])
+ print(df_results)
+```
 
 ## Resultados del modelo MobileNet
 
@@ -213,13 +342,13 @@ En general, aunque ambos conjuntos tienen la misma exactitud del 88%, el segundo
 <img :src="$withBase('/img/resultado1.png')" class="center">
 <img :src="$withBase('/img/resultado2.png')" class="center">
 
-DenseNet121 es una arquitectura de red neuronal conocida por su eficiencia y rendimiento en tareas de visión por computadora. 
-<!-- Aumentar el número de capas en una red neuronal generalmente aumenta su capacidad de aprendizaje, pero puede llevar a problemas de sobreajuste si no se maneja correctamente. En este caso, agregar más capas (de 8 a 10) a DenseNet121 no ha mejorado ni empeorado significativamente su precisión (0.9025), lo que sugiere que el conjunto de datos puede no ser lo suficientemente complejo como para aprovechar las capas adicionales o que el modelo ya está bien entrenado con las 8 capas. -->
+DenseNet121 es una arquitectura de red neuronal conocida por su eficiencia y rendimiento en tareas de visión por computadora.
 
+<!-- Aumentar el número de capas en una red neuronal generalmente aumenta su capacidad de aprendizaje, pero puede llevar a problemas de sobreajuste si no se maneja correctamente. En este caso, agregar más capas (de 8 a 10) a DenseNet121 no ha mejorado ni empeorado significativamente su precisión (0.9025), lo que sugiere que el conjunto de datos puede no ser lo suficientemente complejo como para aprovechar las capas adicionales o que el modelo ya está bien entrenado con las 8 capas. -->
 
 <!-- El alto rendimiento de DenseNet121 en comparación con otros modelos puede atribuirse a varias razones: -->
 
-- Arquitectura eficiente: DenseNet121 es una arquitectura de red neuronal convolucional (CNN) diseñada para maximizar la eficiencia y el rendimiento. 
+- Arquitectura eficiente: DenseNet121 es una arquitectura de red neuronal convolucional (CNN) diseñada para maximizar la eficiencia y el rendimiento.
 
 - Transferencia de aprendizaje: DenseNet121 a menudo se preentrena en conjuntos de datos masivos, como ImageNet, antes de ser ajustado a tareas específicas. Esta preentrenamiento permite que el modelo adquiera un conocimiento general sobre una amplia gama de características visuales, lo que puede beneficiar el rendimiento en tareas más específicas, como la clasificación de imágenes.
 
@@ -227,9 +356,8 @@ DenseNet121 es una arquitectura de red neuronal conocida por su eficiencia y ren
 
 - Optimización del entrenamiento: Los detalles específicos del entrenamiento, como la tasa de aprendizaje, el tamaño del lote y la función de pérdida utilizada, pueden influir significativamente en el rendimiento de un modelo. DenseNet121 puede haber sido entrenado con una configuración óptima de estos hiperparámetros, lo que contribuye a su alto rendimiento.
 
-En resumen, el alto rendimiento de DenseNet121 puede atribuirse a su arquitectura eficiente, transferencia de aprendizaje, técnicas de regularización efectivas y optimización del entrenamiento. Estos factores combinados pueden haber contribuido a que DenseNet121 supere a otros modelos en términos de precisión en el conjunto de datos específico en el que se evaluó.
 
 
-
-
-
+::: tip DenseNet121
+   En resumen, el alto rendimiento de DenseNet121 puede atribuirse a su arquitectura eficiente, transferencia de aprendizaje, técnicas de regularización efectivas y optimización del entrenamiento. Estos factores combinados pueden haber contribuido a que DenseNet121 supere a otros modelos en términos de precisión en el conjunto de datos específico en el que se evaluó.
+:::
