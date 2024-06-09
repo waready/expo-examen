@@ -217,9 +217,9 @@ DenseNet121 es una arquitectura de red neuronal conocida por su eficiencia y ren
 <!-- Aumentar el número de capas en una red neuronal generalmente aumenta su capacidad de aprendizaje, pero puede llevar a problemas de sobreajuste si no se maneja correctamente. En este caso, agregar más capas (de 8 a 10) a DenseNet121 no ha mejorado ni empeorado significativamente su precisión (0.9025), lo que sugiere que el conjunto de datos puede no ser lo suficientemente complejo como para aprovechar las capas adicionales o que el modelo ya está bien entrenado con las 8 capas. -->
 
 
-El alto rendimiento de DenseNet121 en comparación con otros modelos puede atribuirse a varias razones:
+<!-- El alto rendimiento de DenseNet121 en comparación con otros modelos puede atribuirse a varias razones: -->
 
-- Arquitectura eficiente: DenseNet121 es una arquitectura de red neuronal convolucional (CNN) diseñada para maximizar la eficiencia y el rendimiento. Su estructura densamente conectada permite un flujo de información más completo a través de las capas, lo que facilita el aprendizaje de representaciones complejas de los datos.
+- Arquitectura eficiente: DenseNet121 es una arquitectura de red neuronal convolucional (CNN) diseñada para maximizar la eficiencia y el rendimiento. 
 
 - Transferencia de aprendizaje: DenseNet121 a menudo se preentrena en conjuntos de datos masivos, como ImageNet, antes de ser ajustado a tareas específicas. Esta preentrenamiento permite que el modelo adquiera un conocimiento general sobre una amplia gama de características visuales, lo que puede beneficiar el rendimiento en tareas más específicas, como la clasificación de imágenes.
 
